@@ -66,7 +66,7 @@ async def fully_automatic_scanner():
         for chat_id in list(monitored_chats):
             try:
                 chat_peer = await app.resolve_peer(chat_id)
-                full_chat = await app.invoke(functions.channels.GetFullChannel(channel=chat_peer))
+                full_chat = await client.invoke(functions.channels.GetFullChannel(channel=chat_peer))
                 group_call = full_chat.full_chat.call
                 
                 # अगर इस ग्रुप/चैनल में वीसी ऑन नहीं है, तो आगे बढ़ो
