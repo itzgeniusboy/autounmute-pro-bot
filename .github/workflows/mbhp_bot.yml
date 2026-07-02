@@ -1,14 +1,14 @@
 name: 24x7 Bot Runner
 
 on:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: '0 */4 * * *'
   workflow_dispatch:
+  push:
+    branches: [ main, master, dev ]
 
-# 🔥 [CRITICAL FIX] Prevents multiple workflows from stacking up and crashing
 concurrency:
-  group: bot-runner-system
+  group: bot-runner-${{ github.repository }}
   cancel-in-progress: true
 
 jobs:
@@ -18,15 +18,34 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Python Environment
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Runtime Context Packages
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pyrogram==2.0.106 tgcrypto==1.2.5
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          elif [ -f package.json ]; then
+            sudo apt-get install -y nodejs npm
+            npm install
+          else
+            pip install pyTelegramBotAPI telebot aiogram httpx
+          fi
 
-      - name: Run Bot Node Engine
-        run: python bot.py
+      - name: Run Bot Node
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: |
+          RUN_COMMAND="${{ secrets.RUN_COMMAND }}"
+          if [ -z "$RUN_COMMAND" ]; then
+            if [ -f bot.py ]; then RUN_COMMAND="python bot.py"
+            elif [ -f main.py ]; then RUN_COMMAND="python main.py"
+            elif [ -f index.js ]; then RUN_COMMAND="node index.js"
+            elif [ -f package.json ]; then RUN_COMMAND="npm start"
+            else RUN_COMMAND="python bot.py"
+            fi
+          fi
+          echo "Executing start command: $RUN_COMMAND"
+          eval $RUN_COMMAND
