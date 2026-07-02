@@ -3,30 +3,32 @@ import time
 import sys
 import subprocess
 
-# 🚀 डिपेंडेंसी चेक और ऑटो-इंस्टॉल
+# 🚀 Dependency check and auto-installer
 try:
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from pyrogram.errors import FloodWait
 except ImportError:
     print("📥 Pyrogram missing! Installing packages...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5"])
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from pyrogram.errors import FloodWait
 
-# 🔑 आपके क्रेडेंशियल्स
+# 🔑 Credentials
 API_ID = 32569415
 API_HASH = "4209968745cb99d37820d5ba7b4845bd"
 BOT_TOKEN = "8828282788:AAGInprGjqWecQuSnZDsK7oQKY7zgEaHcd0"
 
 app = Client("voice_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# 🧠 ऑटो-डिटेक्शन मेमोरी शेड्स
+# Memory allocations for auto-discovery
 monitored_chats = set()
 already_joined_users = set()
 
-# 🤖 /start कमांड (Premium UI)
+# 🤖 /start command handler (Premium UI)
 @app.on_message(filters.command("start") & filters.private)
 async def start(client, message):
     bot_username = (await client.get_me()).username
@@ -60,7 +62,7 @@ async def auto_discover_chats(client, message):
 async def fully_automatic_scanner():
     print("🤖 Fully Auto Scanner Loop Initiated...")
     while True:
-        await asyncio.sleep(1.0) # 1 सेकंड का सुपरफास्ट रिस्पांस
+        await asyncio.sleep(1.0) # 1-second rapid scanning interval
         
         for chat_id in list(monitored_chats):
             try:
@@ -80,7 +82,7 @@ async def fully_automatic_scanner():
                     if not u_id:
                         continue
 
-                    # 🔥 फ़र्स्ट जॉइन ऑटो-अनम्यूट
+                    # 🔥 First join automation
                     if u_id not in already_joined_users:
                         already_joined_users.add(u_id)
                         if participant.muted:
@@ -88,15 +90,18 @@ async def fully_automatic_scanner():
                             print(f"⚡ [Auto-Unmuted] First Join -> User: {u_id}")
                         continue
 
-                    # 🔥 हैंड-रेज़ (Raise Hand) ऑटो-अनम्यूट
+                    # 🔥 Raise Hand tracking
                     if participant.raise_hand_rating and participant.muted:
                         await app.invoke(functions.phone.EditGroupCallParticipant(call=group_call, peer=await app.resolve_peer(u_id), muted=False))
                         print(f"⚡ [Auto-Unmuted] Raised Hand -> User: {u_id}")
                         
+            except FloodWait as e:
+                print(f"⚠️ Internal Loop Warning: Sleeping for {e.value}s due to Telegram constraints.")
+                await asyncio.sleep(e.value)
             except Exception as e:
                 pass
 
-# 📢 /unmuteall कमांड (फिक्स्ड सिंटैक्स एरर यहाँ है ✅)
+# 📢 /unmuteall command (Emergency Overdrive)
 @app.on_message(filters.command("unmuteall") & (filters.group | filters.channel))
 async def unmute_all_participants(client, message):
     chat_id = message.chat.id
@@ -104,7 +109,6 @@ async def unmute_all_participants(client, message):
     
     try:
         chat_peer = await client.resolve_peer(chat_id)
-        # 👇 यहाँ एरर फिक्स कर दिया गया है (डबल 'channel=' हटा दिया)
         full_chat = await client.invoke(functions.channels.GetFullChannel(channel=chat_peer))
         group_call = full_chat.full_chat.call
         
@@ -123,14 +127,24 @@ async def unmute_all_participants(client, message):
                     unmuted_count += 1
         
         await status.edit(f"🔥 **CORE RESET SUCCESSFUL**\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n» **Cleared Users:** `{unmuted_count}` participants are now live! 🎙️")
+    except FloodWait as e:
+        await status.edit(f"⚠️ **FloodWait Active:** Rate limited by Telegram. Retrying in {e.value} seconds.")
     except Exception as e:
         await status.edit(f"❌ **System Exception:** `{str(e)}`")
 
-# कोर स्टार्टअप आर्किटेक्चर
+# Startup architecture with FloodWait handling configuration
 async def main():
-    await app.start()
-    print("🚀 Zero-Command Automation Core Online...")
-    await fully_automatic_scanner()
+    try:
+        await app.start()
+        print("🚀 Zero-Command Automation Core Online...")
+        await fully_automatic_scanner()
+    except FloodWait as e:
+        print(f"🛑 [CRITICAL WARNING] Telegram FloodWait hit! Server requires a wait of {e.value} seconds.")
+        print(f"Fixing automatically: Holding process execution for {e.value + 5} seconds...")
+        await asyncio.sleep(e.value + 5)
+        # Attempt recovery reconnect
+        await app.start()
+        await fully_automatic_scanner()
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
