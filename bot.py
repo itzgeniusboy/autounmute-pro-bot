@@ -4,7 +4,7 @@ import subprocess
 import os
 import time
 
-# 🚀 Dynamic Dependency Core
+# 🚀 Stable Framework Dependency Management
 try:
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
@@ -13,8 +13,9 @@ try:
     from pytgcalls.types import AudioPiped
     from gtts import gTTS
 except ImportError:
-    print("📥 Bootstrapping core audio components and search infrastructure...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5", "pytgcalls==3.0.0.dev24", "yt-dlp", "gTTS"])
+    print("📥 Bootstrapping stable audio components and search infrastructure...")
+    # Using stable version of pytgcalls to fix the ImportError completely
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5", "pytgcalls==2.4.0", "yt-dlp", "gTTS"])
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -22,7 +23,7 @@ except ImportError:
     from pytgcalls.types import AudioPiped
     from gtts import gTTS
 
-# 🔑 Credentials Layout (Updated with your exact Token)
+# 🔑 Credentials Configuration
 API_ID = 32569415
 API_HASH = "4209968745cb99d37820d5ba7b4845bd"
 BOT_TOKEN = "8180911405:AAH7fAPgA-hBcsMv2rc3s0PMUV4bNwBsAvE"
@@ -137,7 +138,11 @@ async def play_audio(client, message):
                 return
 
         current_active_stream[chat_id] = url
-        await call_client.join_group_call(chat_id, AudioPiped(url))
+        try:
+            await call_client.join_group_call(chat_id, AudioPiped(url))
+        except Exception:
+            await call_client.change_stream(chat_id, AudioPiped(url))
+            
         await status.edit(f"🎶 **Streaming Ad-Free Audio Node!**\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n» **Playing:** `{title}`")
     except Exception as e:
         await status.edit(f"❌ **Failed to establish pipe connection:** `{str(e)}`")
