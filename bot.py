@@ -7,18 +7,17 @@ import subprocess
 try:
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
-    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, SwitchInlineQueryChosenChat
+    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 except ImportError:
     print("📥 Pyrogram or dependencies missing! Installing packages...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5"])
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
-    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, SwitchInlineQueryChosenChat
+    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # 🔑 क्रेडेंशियल्स
 API_ID = 32569415
 API_HASH = "4209968745cb99d37820d5ba7b4845bd"
-# 🎯 आपका नया अपडेटेड टोकन
 BOT_TOKEN = "8828282788:AAGInprGjqWecQuSnZDsK7oQKY7zgEaHcd0"
 
 app = Client("voice_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -31,8 +30,7 @@ already_joined_users = set()
 async def start(client, message):
     bot_username = (await client.get_me()).username
     
-    # 🔥 [PREMIUM CHAT SELECTOR BUTTON]
-    # यह बटन सीधे ग्रुप/चैनल सेलेक्ट करने और एडमिन परमिशन मांगने का पॉपअप खोलेगा
+    # 🔥 यहाँ से त्रुटि वाला इम्पोर्ट हटा दिया गया है, यह डिफ़ॉल्ट बटन से ही काम करेगा
     markup = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
@@ -141,5 +139,5 @@ async def unmute_all_participants(client, message):
         await status.edit(f"❌ **System Exception:** `{str(e)}` \n\n*Make sure I am an Admin with Voice Chat privileges.*")
 
 if __name__ == "__main__":
-    print("🚀 Premium AutoUnmute Pro Engine with Chat Selector Started...")
+    print("🚀 Premium AutoUnmute Pro Engine Fixed & Started...")
     app.run()
