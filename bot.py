@@ -15,97 +15,86 @@ except ImportError:
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# 🔑 क्रेडेंशियल्स
+# 🔑 क्रेडेंशियल्स [As per image_3.png]
 API_ID = 32569415
 API_HASH = "4209968745cb99d37820d5ba7b4845bd"
 BOT_TOKEN = "8828282788:AAGInprGjqWecQuSnZDsK7oQKY7zgEaHcd0"
 
 app = Client("voice_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# मेमोरी शेड: फर्स्ट जॉइन ट्रैक करने के लिए
+# एक्टिव चैट ट्रैकर (बॉट जिन ग्रुप/चैनल में ऐड होगा, उन्हें यहाँ ट्रैक करेगा)
+active_chats = set()
 already_joined_users = set()
 
-# 🤖 /start कमांड (Fixed Buttons for Both Groups & Channels)
+# 🤖 /start कमांड
 @app.on_message(filters.command("start") & filters.private)
 async def start(client, message):
     bot_username = (await client.get_me()).username
     
-    # 🔥 [FIXED PREMIUM BUTTONS]
-    # ग्रुप के लिए startgroup और चैनल के लिए startchannel का अलग बटन
     markup = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton(
-                text="➕ Add to Telegram Group 👥",
-                url=f"https://t.me/{bot_username}?startgroup=true&admin=manage_video_chats+invite_users+delete_messages"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="➕ Add to Telegram Channel 📢",
-                url=f"https://t.me/{bot_username}?startchannel=true&admin=manage_video_chats+invite_users+delete_messages"
-            )
-        ]
+        [InlineKeyboardButton(text="➕ Add to Telegram Group 👥", url=f"https://t.me/{bot_username}?startgroup=true&admin=manage_video_chats+invite_users+delete_messages")],
+        [InlineKeyboardButton(text="➕ Add to Telegram Channel 📢", url=f"https://t.me/{bot_username}?startchannel=true&admin=manage_video_chats+invite_users+delete_messages")]
     ])
 
     welcome_msg = (
-        "⚡ **AUTO-UNMUTE PRO ENGINE** ⚡\n"
+        "⚡ **AUTO-UNMUTE PRO ENGINE v2** ⚡\n"
         "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n"
-        "» **Status:** `Operational 24x7` 🟢\n"
-        "» **Core:** `Pyrogram Daemon Architecture` 📡\n\n"
+        "» **Status:** `Active & Monitoring` 🟢\n"
+        "» **Core:** `Interval Scanning Architecture` 📡\n\n"
         "⚙️ **Easy Setup:**\n"
-        "Choose where you want to add the bot below. Select your Group or Channel, and simply **Allow/Add as Admin**. All required voice/video chat privileges are pre-configured! \n\n"
-        "📊 **Available Commands:**\n"
-        "🔹 `/unmuteall` — Force unmute all active hand-raisers instantly."
+        "Add me using the buttons below, give admin rights, and type `/monitor` in your group/channel to activate the automated scanning shield."
     )
     await message.reply_text(welcome_msg, reply_markup=markup)
 
-# 🔥 [SMART AUTO-UNMUTE NODE]
-@app.on_raw_update()
-async def handle_voice_chat_updates(client, update, users, chats):
-    if isinstance(update, types.UpdateGroupCallParticipants):
-        for participant in update.participants:
-            u_id = participant.peer.user_id if hasattr(participant.peer, 'user_id') else getattr(participant.peer, 'channel_id', None)
-            
-            if not u_id:
-                continue
+# 📡 /monitor कमांड (यह कमांड बॉट को बैकग्राउंड स्कैनर में रजिस्टर कर देगी)
+@app.on_message(filters.command("monitor") & (filters.group | filters.channel))
+async def register_chat(client, message):
+    chat_id = message.chat.id
+    active_chats.add(chat_id)
+    await message.reply_text("🚀 **Aura Shield Activated!** Bot is now actively monitoring this voice chat room 24x7.")
 
-            # 🛑 [FIRST JOIN LOGIC]
-            if u_id not in already_joined_users:
-                already_joined_users.add(u_id)
+# 🔄 [THE UNLIMITED OVERDRIVE LOOP] - हर 1.5 सेकंड में सबको स्कैन करके ऑटो-अनम्यूट करने वाला कोर
+async def voice_chat_scanner():
+    while True:
+        await asyncio.sleep(1.5) # स्कैनिंग इंटरवल
+        for chat_id in list(active_chats):
+            try:
+                chat_peer = await app.resolve_peer(chat_id)
+                full_chat = await app.invoke(functions.channels.GetFullChannel(channel=chat_peer))
+                group_call = full_chat.full_chat.call
                 
-                if participant.muted:
-                    try:
-                        await client.invoke(
-                            functions.phone.EditGroupCallParticipant(
-                                call=update.call,
-                                peer=await client.resolve_peer(u_id),
-                                muted=False
-                            )
-                        )
-                        print(f"✅ Instant Unmuted on First Join — ID: {u_id}")
-                    except Exception as e:
-                        print(f"❌ First join unmute failed: {e}")
-                continue
+                if not group_call:
+                    continue # अगर VC बंद है तो स्किप करें
 
-            # 🛑 [ADMIN PROTECTION LOGIC - RAISE HAND]
-            if participant.raise_hand_rating and participant.muted:
-                try:
-                    await client.invoke(
-                        functions.phone.EditGroupCallParticipant(
-                            call=update.call,
-                            peer=await client.resolve_peer(u_id),
-                            muted=False
-                        )
-                    )
-                    print(f"✅ Unmuted via Raise Hand — ID: {u_id}")
-                except Exception as e:
-                    print(f"❌ Raise hand unmute failed: {e}")
+                # कॉल के मेंबर्स फ़ेच करना
+                participants = await app.invoke(
+                    functions.phone.GetGroupCallParticipants(call=group_call, ids=[], sources=[], offset="", limit=100)
+                )
+                
+                for participant in participants.participants:
+                    u_id = participant.peer.user_id if hasattr(participant.peer, 'user_id') else getattr(participant.peer, 'channel_id', None)
+                    if not u_id:
+                        continue
+
+                    # 🛑 FIRST JOIN UNMUTE LOGIC
+                    if u_id not in already_joined_users:
+                        already_joined_users.add(u_id)
+                        if participant.muted:
+                            await app.invoke(functions.phone.EditGroupCallParticipant(call=group_call, peer=await app.resolve_peer(u_id), muted=False))
+                        continue
+
+                    # 🛑 RAISE HAND UNMUTE LOGIC
+                    if participant.raise_hand_rating and participant.muted:
+                        await app.invoke(functions.phone.EditGroupCallParticipant(call=group_call, peer=await app.resolve_peer(u_id), muted=False))
+                        
+            except Exception as e:
+                print(f"Scanner exception for chat {chat_id}: {e}")
 
 # 📢 /unmuteall कमांड
 @app.on_message(filters.command("unmuteall") & (filters.group | filters.channel))
 async def unmute_all_participants(client, message):
     chat_id = message.chat.id
-    status = await message.reply_text("⚡ `Syncing with voice infrastructure, please wait...` ⚡")
+    status = await message.reply_text("⚡ `Force syncing voice architecture...` ⚡")
     
     try:
         chat_peer = await client.resolve_peer(chat_id)
@@ -113,38 +102,29 @@ async def unmute_all_participants(client, message):
         group_call = full_chat.full_chat.call
         
         if not group_call:
-            await status.edit("⚠️ **Matrix Error:** No active Voice Chat detected in this chat/channel.")
+            await status.edit("⚠️ **Matrix Error:** No active Voice Chat detected.")
             return
 
-        participants = await client.invoke(
-            functions.phone.GetGroupCallParticipants(call=group_call, ids=[], sources=[], offset="", limit=100)
-        )
-        
+        participants = await client.invoke(functions.phone.GetGroupCallParticipants(call=group_call, ids=[], sources=[], offset="", limit=100))
         unmuted_count = 0
+        
         for participant in participants.participants:
             if participant.muted:
                 u_id = participant.peer.user_id if hasattr(participant.peer, 'user_id') else getattr(participant.peer, 'channel_id', None)
-                
                 if u_id:
-                    await client.invoke(
-                        functions.phone.EditGroupCallParticipant(
-                            call=group_call,
-                            peer=await client.resolve_peer(u_id),
-                            muted=False
-                        )
-                    )
+                    await client.invoke(functions.phone.EditGroupCallParticipant(call=group_call, peer=await client.resolve_peer(u_id), muted=False))
                     unmuted_count += 1
         
-        await status.edit(
-            f"🔥 **CORE RESET SUCCESSFUL** 🔥\n"
-            f"‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n"
-            f"» **Action:** Bulk Overdrive Unmute\n"
-            f"» **Cleared Users:** `{unmuted_count}` participants are now live! 🎙️"
-        )
-        
+        await status.edit(f"🔥 **CORE RESET SUCCESSFUL**\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n» **Cleared Users:** `{unmuted_count}` participants are now live! 🎙️")
     except Exception as e:
-        await status.edit(f"❌ **System Exception:** `{str(e)}` \n\n*Make sure I am an Admin with Voice Chat privileges.*")
+        await status.edit(f"❌ **System Exception:** `{str(e)}`")
+
+# बैकग्राउंड टास्क स्टार्ट करने का लॉजिक
+async def main():
+    await app.start()
+    print("🚀 AutoUnmute Scanner Core Active...")
+    await voice_chat_scanner()
 
 if __name__ == "__main__":
-    print("🚀 Premium AutoUnmute Pro Engine with Dual Selector Fixed...")
-    app.run()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
