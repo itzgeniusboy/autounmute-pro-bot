@@ -4,7 +4,7 @@ import subprocess
 import os
 import time
 
-# 🚀 Stable Framework Dependency Management
+# 🚀 Highly Stable Dependency Management Layer
 try:
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
@@ -13,9 +13,9 @@ try:
     from pytgcalls.types import AudioPiped
     from gtts import gTTS
 except ImportError:
-    print("📥 Bootstrapping stable audio components and search infrastructure...")
-    # Using stable version of pytgcalls to fix the ImportError completely
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5", "pytgcalls==2.4.0", "yt-dlp", "gTTS"])
+    print("📥 Bootstrapping stable production-ready audio nodes...")
+    # Using 2.1.0 which is explicitly supported and available on PyPI
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5", "pytgcalls==2.1.0", "yt-dlp", "gTTS"])
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
