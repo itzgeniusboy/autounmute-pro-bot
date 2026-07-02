@@ -49,7 +49,6 @@ async def start(client, message):
     await message.reply_text(welcome_msg, reply_markup=markup)
 
 # 🔍 [SMART AUTO-DISCOVERY NODE]
-# ग्रुप या चैनल में कोई भी मैसेज आते ही बॉट उसे चुपके से बैकग्राउंड स्कैनर में डाल देगा
 @app.on_message(filters.group | filters.channel)
 async def auto_discover_chats(client, message):
     chat_id = message.chat.id
@@ -57,23 +56,21 @@ async def auto_discover_chats(client, message):
         monitored_chats.add(chat_id)
         print(f"📡 [Auto-Discovered] Connected to Chat ID: {chat_id}")
 
-# 🔄 [THE UNLIMITED AUTOMATIC LOOP] - हर 1 सेकंड में बैकग्राउंड चेकिंग
+# 🔄 [THE UNLIMITED AUTOMATIC LOOP]
 async def fully_automatic_scanner():
     print("🤖 Fully Auto Scanner Loop Initiated...")
     while True:
-        await asyncio.sleep(1.0) # सुपरफास्ट 1 सेकंड रिस्पांस रेट
+        await asyncio.sleep(1.0) # 1 सेकंड का सुपरफास्ट रिस्पांस
         
         for chat_id in list(monitored_chats):
             try:
                 chat_peer = await app.resolve_peer(chat_id)
-                full_chat = await client.invoke(functions.channels.GetFullChannel(channel=chat_peer))
+                full_chat = await app.invoke(functions.channels.GetFullChannel(channel=chat_peer))
                 group_call = full_chat.full_chat.call
                 
-                # अगर इस ग्रुप/चैनल में वीसी ऑन नहीं है, तो आगे बढ़ो
                 if not group_call:
                     continue
 
-                # एक्टिव वॉइस चैट के पार्टिसिपेंट्स की लिस्ट निकालना
                 participants = await app.invoke(
                     functions.phone.GetGroupCallParticipants(call=group_call, ids=[], sources=[], offset="", limit=100)
                 )
@@ -83,7 +80,7 @@ async def fully_automatic_scanner():
                     if not u_id:
                         continue
 
-                    # 🔥 फ़र्स्ट जॉइन ऑटो-अनम्यूट लॉजिक
+                    # 🔥 फ़र्स्ट जॉइन ऑटो-अनम्यूट
                     if u_id not in already_joined_users:
                         already_joined_users.add(u_id)
                         if participant.muted:
@@ -91,16 +88,15 @@ async def fully_automatic_scanner():
                             print(f"⚡ [Auto-Unmuted] First Join -> User: {u_id}")
                         continue
 
-                    # 🔥 हैंड-रेज़ (Raise Hand) ऑटो-अनम्यूट लॉजिक
+                    # 🔥 हैंड-रेज़ (Raise Hand) ऑटो-अनम्यूट
                     if participant.raise_hand_rating and participant.muted:
                         await app.invoke(functions.phone.EditGroupCallParticipant(call=group_call, peer=await app.resolve_peer(u_id), muted=False))
                         print(f"⚡ [Auto-Unmuted] Raised Hand -> User: {u_id}")
                         
             except Exception as e:
-                # अगर बॉट के पास राइट्स नहीं हैं या कोई और एरर है, तो चुपचाप हैंडल करें
                 pass
 
-# 📢 /unmuteall कमांड (इमरजेंसी ओवरड्राइव)
+# 📢 /unmuteall कमांड (फिक्स्ड सिंटैक्स एरर यहाँ है ✅)
 @app.on_message(filters.command("unmuteall") & (filters.group | filters.channel))
 async def unmute_all_participants(client, message):
     chat_id = message.chat.id
@@ -108,7 +104,8 @@ async def unmute_all_participants(client, message):
     
     try:
         chat_peer = await client.resolve_peer(chat_id)
-        full_chat = await client.invoke(functions.channels.GetFullChannel(channel=channel=chat_peer))
+        # 👇 यहाँ एरर फिक्स कर दिया गया है (डबल 'channel=' हटा दिया)
+        full_chat = await client.invoke(functions.channels.GetFullChannel(channel=chat_peer))
         group_call = full_chat.full_chat.call
         
         if not group_call:
