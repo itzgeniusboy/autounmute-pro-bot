@@ -1,25 +1,27 @@
 import asyncio
 import sys
 import subprocess
+import time
 
-# 🚀 Automated Dependency Layer
+# 🚀 Automated Dependency Management
 try:
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from pyrogram.errors import FloodWait
 except ImportError:
     print("📥 Installing missing framework dependencies...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5"])
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from pyrogram.errors import FloodWait
 
-# 🔑 Core Credentials Configuration
+# 🔑 Credentials Configuration
 API_ID = 32569415
 API_HASH = "4209968745cb99d37820d5ba7b4845bd"
 BOT_TOKEN = "8828282788:AAGInprGjqWecQuSnZDsK7oQKY7zgEaHcd0"
 
-# 🔥 Disable Pyrogram's internal workers to prevent hanging tasks on external platforms
 app = Client(
     "voice_bot", 
     api_id=API_ID, 
@@ -51,18 +53,14 @@ async def start(client, message):
     await message.reply_text(welcome_msg, reply_markup=markup)
 
 # 🔥 [REAL-TIME EVENT SHIELD]
-# Since your platform handles the loop, we use Pyrogram's direct raw listeners.
-# This runs instantly when an update arrives, processes it, and lets your platform cycle cleanly.
 @app.on_raw_update()
 async def handle_voice_chat_raw(client, update, users, chats):
     if isinstance(update, types.UpdateGroupCallParticipants):
         for participant in update.participants:
-            # Extract distinct structural IDs
             u_id = participant.peer.user_id if hasattr(participant.peer, 'user_id') else getattr(participant.peer, 'channel_id', None)
             if not u_id:
                 continue
 
-            # Check if user needs immediate mic clearance (Muted + Raised Hand/New Join status)
             if participant.muted:
                 try:
                     await client.invoke(
@@ -74,7 +72,7 @@ async def handle_voice_chat_raw(client, update, users, chats):
                     )
                     print(f"✅ Shield Verified: Granted Mic Access -> ID: {u_id}")
                 except Exception:
-                    pass # Silently drop admin authorization errors
+                    pass
 
 # 📢 Manual Backup Overdrive Command
 @app.on_message(filters.command("unmuteall") & (filters.group | filters.channel))
@@ -101,7 +99,21 @@ async def unmute_all_participants(client, message):
     except Exception as e:
         await message.reply_text(f"❌ **System Exception:** `{str(e)}`")
 
-# 📡 Clean execution startup sequence compatible with external trigger platforms
+# ⚡ [SAFE RUN TIME WRAPPER]
+def run_safely():
+    while True:
+        try:
+            print("🚀 Initializing Handshake with Telegram API Clusters...")
+            app.run()
+            break # Exit loop gracefully if execution wraps normally
+        except FloodWait as e:
+            print(f"🛑 [FLOOD WAIT ACTIVATED] Telegram rate limit detected. Code: {e.value} seconds.")
+            print(f"System Action: Suspending execution safely for {e.value + 5}s to reset backend thresholds...")
+            time.sleep(e.value + 5)
+            print("🔄 Cooldown sequence cleared. Retrying system authorization node...")
+        except Exception as crash:
+            print(f"❌ Unhandled engine exception: {crash}")
+            break
+
 if __name__ == "__main__":
-    print("🚀 Premium Event-Driven Engine Initialized. Handing control to host platform...")
-    app.run()
+    run_safely()
