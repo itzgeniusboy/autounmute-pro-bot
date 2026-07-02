@@ -25,17 +25,24 @@ app = Client("voice_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 # मेमोरी शेड: फर्स्ट जॉइन ट्रैक करने के लिए
 already_joined_users = set()
 
-# 🤖 /start कमांड (Aesthetic UI with Add Bot Button)
+# 🤖 /start कमांड (Fixed Buttons for Both Groups & Channels)
 @app.on_message(filters.command("start") & filters.private)
 async def start(client, message):
     bot_username = (await client.get_me()).username
     
-    # 🔥 यहाँ से त्रुटि वाला इम्पोर्ट हटा दिया गया है, यह डिफ़ॉल्ट बटन से ही काम करेगा
+    # 🔥 [FIXED PREMIUM BUTTONS]
+    # ग्रुप के लिए startgroup और चैनल के लिए startchannel का अलग बटन
     markup = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                text="➕ Add Bot to Group / Channel ➕",
+                text="➕ Add to Telegram Group 👥",
                 url=f"https://t.me/{bot_username}?startgroup=true&admin=manage_video_chats+invite_users+delete_messages"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="➕ Add to Telegram Channel 📢",
+                url=f"https://t.me/{bot_username}?startchannel=true&admin=manage_video_chats+invite_users+delete_messages"
             )
         ]
     ])
@@ -46,7 +53,7 @@ async def start(client, message):
         "» **Status:** `Operational 24x7` 🟢\n"
         "» **Core:** `Pyrogram Daemon Architecture` 📡\n\n"
         "⚙️ **Easy Setup:**\n"
-        "Click the premium button below, select your Group or Channel, and simply **Allow/Add as Admin**. The required video chat privileges are pre-configured! \n\n"
+        "Choose where you want to add the bot below. Select your Group or Channel, and simply **Allow/Add as Admin**. All required voice/video chat privileges are pre-configured! \n\n"
         "📊 **Available Commands:**\n"
         "🔹 `/unmuteall` — Force unmute all active hand-raisers instantly."
     )
@@ -139,5 +146,5 @@ async def unmute_all_participants(client, message):
         await status.edit(f"❌ **System Exception:** `{str(e)}` \n\n*Make sure I am an Admin with Voice Chat privileges.*")
 
 if __name__ == "__main__":
-    print("🚀 Premium AutoUnmute Pro Engine Fixed & Started...")
+    print("🚀 Premium AutoUnmute Pro Engine with Dual Selector Fixed...")
     app.run()
