@@ -1,28 +1,39 @@
 import asyncio
 import sys
 import subprocess
+import os
 import time
 
+# 🚀 Dynamic Dependency Core
 try:
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-    from pyrogram.errors import FloodWait
+    from pytgcalls import PyTgCalls
+    from pytgcalls.types import AudioPiped
+    from gtts import gTTS
 except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5"])
+    print("📥 Bootstrapping core audio components and search infrastructure...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyrogram==2.0.106", "tgcrypto==1.2.5", "pytgcalls==3.0.0.dev24", "yt-dlp", "gTTS"])
     from pyrogram import Client, filters
     from pyrogram.raw import functions, types
     from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-    from pyrogram.errors import FloodWait
+    from pytgcalls import PyTgCalls
+    from pytgcalls.types import AudioPiped
+    from gtts import gTTS
 
+# 🔑 Credentials Layout (Updated with your exact Token)
 API_ID = 32569415
 API_HASH = "4209968745cb99d37820d5ba7b4845bd"
-BOT_TOKEN = "8828282788:AAGInprGjqWecQuSnZDsK7oQKY7zgEaHcd0"
+BOT_TOKEN = "8180911405:AAH7fAPgA-hBcsMv2rc3s0PMUV4bNwBsAvE"
 
-app = Client("voice_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN, workers=4)
+app = Client("sound_engine_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN, workers=4)
+call_client = PyTgCalls(app)
 
 monitored_chats = set()
+current_active_stream = {}
 
+# 🤖 /start Command UI Layout
 @app.on_message(filters.command("start") & filters.private)
 async def start(client, message):
     bot_username = (await client.get_me()).username
@@ -31,27 +42,46 @@ async def start(client, message):
         [InlineKeyboardButton(text="➕ Add to Telegram Channel 📢", url=f"https://t.me/{bot_username}?startchannel=true&admin=manage_video_chats+invite_users+delete_messages")]
     ])
     welcome_msg = (
-        "⚡ **AUTO-UNMUTE PRO ENGINE v5** ⚡\n"
+        "🎵 **ONE-CORE SOUND ENGINE** 🎵\n"
         "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n"
-        "» **Status:** `Channel & Group Auto-Scanner Active` 🟢\n"
-        "» **Core:** `Hybrid Loop-Interval Architecture` 📡\n\n"
-        "⚙️ **Zero Setup Required:**\n"
-        "Add me as Admin, post ONE message in the channel, and turn on the Live Stream!"
+        "» **Engine Status:** `Operational` 🟢\n"
+        "» **Ad-Policy:** `100% Pure Ad-Free Transmission` 🛡️\n"
+        "» **Features:** `Auto-Unmute & Ambient Voice Greetings` 📡\n\n"
+        "📊 **Control Command Layout:**\n"
+        "🔹 `/play <song name>` — Search and stream any song instantly from YouTube.\n"
+        "🔹 `/stop` — Terminate the active voice call audio processing."
     )
     await message.reply_text(welcome_msg, reply_markup=markup)
 
-# ऑटो-डिटेक्शन: चैनल का कोई भी मैसेज आते ही एक्टिवेट होगा
+# Auto-Discovery Tracker Module
 @app.on_message(filters.group | filters.channel)
-async def auto_discover_chats(client, message):
+async def auto_discover(client, message):
     chat_id = message.chat.id
     if chat_id not in monitored_chats:
         monitored_chats.add(chat_id)
-        print(f"📡 [Auto-Discovered] Connected to Channel/Group ID: {chat_id}")
 
-async def passive_channel_radar():
-    print("🤖 Automated Channel Scanner Thread Initiated...")
+# 🎙️ Ambient Welcome Greetings Processing
+async def trigger_voice_welcome(chat_id, user_name):
+    try:
+        welcome_text = f"Welcome to the live stream, {user_name}! Enjoy the ad free experience."
+        tts = gTTS(text=welcome_text, lang='en')
+        tts.save("welcome.mp3")
+        
+        await call_client.change_stream(chat_id, AudioPiped("welcome.mp3"))
+        await asyncio.sleep(4)
+        
+        if chat_id in current_active_stream:
+            await call_client.change_stream(chat_id, AudioPiped(current_active_stream[chat_id]))
+            
+        os.remove("welcome.mp3")
+    except Exception:
+        pass
+
+# 🔄 Asynchronous Auto-Unmute & Scan Radar Loop
+async def active_ambient_radar():
+    already_checked_users = set()
     while True:
-        await asyncio.sleep(2.0) # 2 सेकंड का फ़ास्ट स्कैनिंग इंटरवल
+        await asyncio.sleep(2.0)
         for chat_id in list(monitored_chats):
             try:
                 chat_peer = await app.resolve_peer(chat_id)
@@ -66,37 +96,73 @@ async def passive_channel_radar():
                 )
                 
                 for participant in participants.participants:
+                    u_id = participant.peer.user_id if hasattr(participant.peer, 'user_id') else getattr(participant.peer, 'channel_id', None)
+                    if not u_id:
+                        continue
+
                     if participant.muted:
-                        u_id = participant.peer.user_id if hasattr(participant.peer, 'user_id') else getattr(participant.peer, 'channel_id', None)
-                        if not u_id:
-                            continue
+                        await app.invoke(functions.phone.EditGroupCallParticipant(call=group_call, peer=await app.resolve_peer(u_id), muted=False))
+
+                    if u_id not in already_checked_users:
+                        already_checked_users.add(u_id)
+                        user_data = await app.get_users(u_id)
+                        first_name = user_data.first_name if user_data.first_name else "User"
+                        asyncio.create_task(trigger_voice_welcome(chat_id, first_name))
                         
-                        # डायरेक्ट क्लाउड अनम्यूट कमांड
-                        await app.invoke(
-                            functions.phone.EditGroupCallParticipant(
-                                call=group_call, 
-                                peer=await app.resolve_peer(u_id), 
-                                muted=False
-                            )
-                        )
-                        print(f"⚡ [Radar] Unmuted Participant -> ID: {u_id}")
-                        
-            except FloodWait as e:
-                await asyncio.sleep(e.value)
-            except Exception as e:
+            except Exception:
                 pass
 
+# 🎵 YouTube Search & Audio Ingestion Node (Ad-Free)
+@app.on_message(filters.command("play") & (filters.group | filters.channel))
+async def play_audio(client, message):
+    chat_id = message.chat.id
+    if len(message.command) < 2:
+        await message.reply_text("⚠️ **Format:** `/play <song name>`")
+        return
+
+    query = message.text.split(None, 1)[1]
+    status = await message.reply_text("🔍 `Searching YouTube server nodes...` ⚡")
+    
+    try:
+        import yt_dlp
+        ydl_opts = {'format': 'bestaudio', 'quiet': True, 'default_search': 'ytsearch'}
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"ytsearch1:{query}", download=False)
+            if 'entries' in info and len(info['entries']) > 0:
+                url = info['entries'][0]['url']
+                title = info['entries'][0]['title']
+            else:
+                await status.edit("❌ **Search Error:** No matching audio files found.")
+                return
+
+        current_active_stream[chat_id] = url
+        await call_client.join_group_call(chat_id, AudioPiped(url))
+        await status.edit(f"🎶 **Streaming Ad-Free Audio Node!**\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n» **Playing:** `{title}`")
+    except Exception as e:
+        await status.edit(f"❌ **Failed to establish pipe connection:** `{str(e)}`")
+
+@app.on_message(filters.command("stop") & (filters.group | filters.channel))
+async def stop_audio(client, message):
+    chat_id = message.chat.id
+    try:
+        await call_client.leave_group_call(chat_id)
+        current_active_stream.pop(chat_id, None)
+        await message.reply_text("🛑 **Stream Disconnected Successfully.**")
+    except Exception:
+        pass
+
+# ⚙️ Clean Execution & Wrapper Node Integration
 def run_safely():
     while True:
         try:
             loop = asyncio.get_event_loop()
-            loop.create_task(passive_channel_radar())
+            loop.create_task(active_ambient_radar())
             app.run()
             break 
-        except FloodWait as e:
-            time.sleep(e.value + 5)
-        except Exception:
-            break
+        except Exception as error:
+            print(f"⚠️ Initializing restart sequence due to unexpected break: {error}")
+            time.sleep(5)
 
 if __name__ == "__main__":
     run_safely()
